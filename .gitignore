@@ -1,0 +1,62 @@
+# Ignore Python bytecode files
+*.pyc
+__pycache__/
+
+# Ignore SQLite database
+db.sqlite3
+
+# Ignore log files
+*.log
+
+# Ignore virtual environments
+env/
+venv/
+ENV/
+.venv/
+.env/
+
+# Ignore Django migration files
+myapp/migrations/*.pyc
+myapp/migrations/__pycache__/
+myapp/migrations/0001_initial.py
+
+# Ignore media and static files (if applicable)
+media/
+static/
+
+# Ignore configuration files with sensitive data
+*.env
+
+# Ignore IDE specific files and directories
+.vscode/
+.idea/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# Ignore test output
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.tox/
+noxfile.py
+.nox/
+
+# Ignore Sphinx documentation
+docs/_build/
+
+# Ignore local settings
+local_settings.py
+
+# Ignore any instance-specific files
+instance/
+
+# Ignore compiled files
+*.so
