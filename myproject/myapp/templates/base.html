@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}Django Project{% endblock %}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet"/>
+    <!-- MDB -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.3.2/mdb.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: linear-gradient(179.7deg, rgba(197,214,227,1) 2.9%, rgba(144,175,202,1) 97.1%);
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+        }
+        header {
+            background: #404041;
+            color: #fff;
+            padding-top: 30px;
+            min-height: 70px;
+            border-bottom: #ffffff 3px solid;
+        }
+        header a {
+            color: #fff;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 16px;
+        }
+        header ul {
+            padding: 0;
+            list-style: none;
+        }
+        header li {
+            float: left;
+            display: inline;
+            padding: 0 20px 0 20px;
+        }
+        header #branding {
+            float: left;
+        }
+        header #branding h1 {
+            margin: 0;
+        }
+        header nav {
+            float: right;
+            margin-top: 10px;
+        }
+        footer {
+            padding: 20px;
+            margin-top: 20px;
+            color: #fff;
+            background-color: #333;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+            background: #fff;
+            margin-top: 20px;
+        }
+        a.button {
+            display: inline-block;
+            height: 40px;
+            background: #0779e4;
+            color: #fff;
+            border: 0;
+            padding-left: 20px;
+            padding-right: 20px;
+            cursor: pointer;
+            text-align: center;
+            line-height: 40px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- MDB -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.3.2/mdb.umd.min.js"></script>
+    <header>
+        <div class="container mt-4">
+            <div id="branding">
+                <h1>Welcome, {{ user.username }}!</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'register' %}">Register</a></li>
+                    <li><a href="{% url 'login' %}">Login</a></li>
+                    <li><a href="{% url 'list_assignments' %}">Assignments</a></li>
+                    <li><a href="{% url 'add_assignment' %}">Add Assignment</a></li>
+                    <li><a href="{% url 'manage_users' %}">Manage Users</a></li>
+                    {% if user.is_authenticated %}
+                        <li><a href="{% url 'logout' %}">Logout</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <footer class="bg-body-tertiary text-center">
+        <!-- Grid container -->
+        <div class="container p-4 pb-0">
+            <!-- Section: Social media -->
+            <section class="mb-4">
+                <!-- Twitter -->
+                <a data-mdb-ripple-init class="btn text-white btn-floating m-1" style="background-color: #55acee;" href="https://www.twitter.com" role="button"><i class="fab fa-twitter"></i></a>
+
+                <!-- Linkedin -->
+                <a data-mdb-ripple-init class="btn text-white btn-floating m-1" style="background-color: #0082ca;" href="https://github.com/sushilsharma8" role="button"><i class="fab fa-linkedin-in"></i></a>
+                
+                <!-- Github -->
+                <a data-mdb-ripple-init class="btn text-white btn-floating m-1" style="background-color: #333333;" href="https://github.com/sushilsharma8" role="button"><i class="fab fa-github"></i></a>
+            </section>
+            <!-- Section: Social media -->
+        </div>
+        <!-- Grid container -->
+
+        <!-- Copyright -->
+        <div class="text-center p-3" style="background-image: linear-gradient(179.7deg, rgba(197,214,227,1) 2.9%, rgba(144,175,202,1) 97.1%);">
+            © 2024 Copyright : Sushil Sharma
+            <!-- <a class="text-body" href="https://mdbootstrap.com/">Sushil Sharma</a> -->
+        </div>
+        <!-- Copyright -->
+    </footer>
+</body>
+</html>

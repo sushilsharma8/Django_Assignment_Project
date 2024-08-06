@@ -17,17 +17,37 @@ myproject/
         __init__.py
         migrations/
             0001_initial.py
+            0002_remove_assignment_due_date.py
+            0003_customuser_role.py
+            0004_assignment_grade_assignment_teacher_and_more.py
+            0005_remove_assignment_grade_remove_assignment_teacher_and_more.py
+            0006_customuser_role_customuser_teacher_id.py
             __init__.py
             __pycache__/
                 0001_initial.cpython-311.pyc
                 0002_customuser_delete_user.cpython-311.pyc
+                0002_remove_assignment_due_date.cpython-311.pyc
+                0003_customuser_role.cpython-311.pyc
+                0004_assignment_grade_assignment_teacher_and_more.cpython-311.pyc
+                0005_remove_assignment_grade_remove_assignment_teacher_and_more.cpython-311.pyc
+                0006_customuser_role_customuser_teacher_id.cpython-311.pyc
                 __init__.cpython-311.pyc
         templates/
+            add_assignment.html
+            assignments.html
+            assignments_student.html
+            assignments_teacher.html
+            base.html
+            delete_assignment.html
+            grade_assignment.html
             home.html
             login.html
+            register.html
+            update_assignment.html
         __pycache__/
             admin.cpython-311.pyc
             apps.cpython-311.pyc
+            forms.cpython-311.pyc
             models.cpython-311.pyc
             serializers.cpython-311.pyc
             urls.cpython-311.pyc
@@ -44,6 +64,7 @@ myproject/
             urls.cpython-311.pyc
             wsgi.cpython-311.pyc
             __init__.cpython-311.pyc
+    static/
 
 
 ### Important Files ###
@@ -61,6 +82,30 @@ admin.site.register(CustomUser, UserAdmin)
 # myapp/forms.py
 from django import forms
 from django.contrib.auth import authenticate
+from .models import Assignment
+from django.contrib.auth.forms import UserCreationForm
+from .models import CustomUser
+
+class RegistrationForm(UserCreationForm):
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'password1', 'password2', 'role', 'student_id', 'teacher_id']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        role = cleaned_data.get('role')
+        student_id = cleaned_data.get('student_id')
+        teacher_id = cleaned_data.get('teacher_id')
+
+        if role == CustomUser.STUDENT and not student_id:
+            self.add_error('student_id', 'Student ID is required for students.')
+        elif role == CustomUser.TEACHER and not teacher_id:
+            self.add_error('teacher_id', 'Teacher ID is required for teachers.')
+        elif role == CustomUser.PRINCIPAL and (student_id or teacher_id):
+            self.add_error('role', 'Principal should not have a student or teacher ID.')
+
+        return cleaned_data
+
 
 class LoginForm(forms.Form):
     username = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'autofocus': True}))
@@ -75,15 +120,34 @@ class LoginForm(forms.Form):
             user = authenticate(username=username, password=password)
             if user is None:
                 raise forms.ValidationError('Invalid username or password')
+            if not user.is_active:
+                raise forms.ValidationError('This account is inactive.')
+
         return cleaned_data
 
+class AssignmentForm(forms.ModelForm):
+    class Meta:
+        model = Assignment
+        fields = ['student_id', 'title', 'description']
 
 ### File: myapp\models.py ###
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 class CustomUser(AbstractUser):
+    STUDENT = 'student'
+    TEACHER = 'teacher'
+    PRINCIPAL = 'principal'
+
+    ROLE_CHOICES = [
+        (STUDENT, 'Student'),
+        (TEACHER, 'Teacher'),
+        (PRINCIPAL, 'Principal'),
+    ]
+
     student_id = models.IntegerField(null=True, blank=True)
+    teacher_id = models.IntegerField(null=True, blank=True)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default=STUDENT)
 
     def __str__(self):
         return self.username
@@ -92,7 +156,7 @@ class Assignment(models.Model):
     student_id = models.IntegerField()
     title = models.CharField(max_length=100)
     description = models.TextField(null=True, blank=True)
-    due_date = models.DateTimeField()
+    # due_date = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -113,44 +177,52 @@ class AssignmentSerializer(serializers.ModelSerializer):
 
 
 ### File: myapp\urls.py ###
-# myapp/urls.py
 from django.urls import path
 from . import views
 
 urlpatterns = [
     path('assignments/', views.list_assignments, name='list_assignments'),
+    path('assignments/add/', views.add_assignment, name='add_assignment'),
+    path('assignments/update/<int:pk>/', views.update_assignment, name='update_assignment'),
+    path('assignments/delete/<int:pk>/', views.delete_assignment, name='delete_assignment'),
+    path('register/', views.register, name='register'),
     path('login/', views.login_view, name='login'),
     path('', views.home, name='home'),
 ]
 
-
 ### File: myapp\views.py ###
 # myapp/views.py
 from django.http import JsonResponse
+from .forms import AssignmentForm, RegistrationForm
 from .models import Assignment, CustomUser
 from .serializers import AssignmentSerializer
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login as auth_login
 from django import forms
+from django.shortcuts import get_object_or_404
+from django.contrib import messages
 import logging
 
 # Get an instance of a logger
 logger = logging.getLogger('myapp')
 
+def register(request):
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            auth_login(request, user)
+            return redirect('home')
+    else:
+        form = RegistrationForm()
+    return render(request, 'register.html', {'form': form})
+
+
 @login_required
 def list_assignments(request):
-    student_id = request.user.student_id
-    logger.debug(f'User {request.user.username} is requesting assignments for student ID {student_id}')
-    
-    try:
-        students_assignments = Assignment.objects.filter(student_id=student_id)
-        serializer = AssignmentSerializer(students_assignments, many=True)
-        logger.debug(f'Found {students_assignments.count()} assignments for student ID {student_id}')
-        return JsonResponse({'data': serializer.data})
-    except Exception as e:
-        logger.error(f'Error retrieving assignments: {e}')
-        return JsonResponse({'error': 'Failed to retrieve assignments'}, status=500)
+    assignments = Assignment.objects.all()
+    return render(request, 'assignments.html', {'assignments': assignments})
 
 class LoginForm(forms.Form):
     username = forms.CharField(max_length=150)
@@ -173,20 +245,380 @@ def login_view(request):
 
     return render(request, 'login.html', {'form': form})
 
+@login_required
 def home(request):
     return render(request, 'home.html')
 
 
+@login_required
+def add_assignment(request):
+    if request.method == 'POST':
+        form = AssignmentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Assignment added successfully!')
+            return redirect('list_assignments')
+    else:
+        form = AssignmentForm()
+    return render(request, 'add_assignment.html', {'form': form})
+
+@login_required
+def update_assignment(request, pk):
+    assignment = get_object_or_404(Assignment, pk=pk)
+    if request.method == 'POST':
+        form = AssignmentForm(request.POST, instance=assignment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Assignment updated successfully!')
+            return redirect('list_assignments')
+    else:
+        form = AssignmentForm(instance=assignment)
+    return render(request, 'update_assignment.html', {'form': form})
+
+@login_required
+def delete_assignment(request, pk):
+    assignment = get_object_or_404(Assignment, pk=pk)
+    if request.method == 'POST':
+        assignment.delete()
+        messages.success(request, 'Assignment deleted successfully!')
+        return redirect('list_assignments')
+    return render(request, 'delete_assignment.html', {'assignment': assignment})
+
+
+### File: myapp\templates\add_assignment.html ###
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Assignment</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Add Assignment</h1>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">Add Assignment</button>
+        </form>
+        <a href="{% url 'list_assignments' %}" class="btn btn-secondary mt-3">Back to Assignments</a>
+    </div>
+</body>
+</html>
+
+
+### File: myapp\templates\assignments.html ###
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignments</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Assignments</h1>
+        {% if messages %}
+            <div>
+                {% for message in messages %}
+                    <div class="alert alert-success" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <!-- Add Assignment Button -->
+        <a href="{% url 'add_assignment' %}" class="btn btn-primary mb-3">Add Assignment</a>
+        
+        <!-- Assignments Table -->
+        <table class="table table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Due Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for assignment in assignments %}
+                    <tr>
+                        <td>{{ assignment.id }}</td>
+                        <td>{{ assignment.title }}</td>
+                        <td>{{ assignment.description }}</td>
+                        <td>{{ assignment.due_date }}</td>
+                        <td>
+                            <a href="{% url 'update_assignment' assignment.id %}" class="btn btn-warning">Edit</a>
+                            <a href="{% url 'delete_assignment' assignment.id %}" class="btn btn-danger">Delete</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
+
+
+### File: myapp\templates\assignments_student.html ###
+<!-- templates/assignments_student.html -->
+{% extends 'base.html' %}
+
+{% block title %}Student Assignments{% endblock %}
+
+{% block content %}
+<h2>Assignments for Students</h2>
+{% if assignments %}
+    <table class="table table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Due Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for assignment in assignments %}
+                <tr>
+                    <td>{{ assignment.id }}</td>
+                    <td>{{ assignment.title }}</td>
+                    <td>{{ assignment.description }}</td>
+                    <td>{{ assignment.due_date }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No assignments available.</p>
+{% endif %}
+{% endblock %}
+
+
+### File: myapp\templates\assignments_teacher.html ###
+<!-- templates/assignments_teacher.html -->
+{% extends 'base.html' %}
+
+{% block title %}Teacher Assignments{% endblock %}
+
+{% block content %}
+<h2>Assignments for Teachers</h2>
+<a href="{% url 'add_assignment' %}" class="btn btn-primary mb-3">Add Assignment</a>
+{% if assignments %}
+    <table class="table table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Due Date</th>
+                <th>Student</th>
+                <th>Grade</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for assignment in assignments %}
+                <tr>
+                    <td>{{ assignment.id }}</td>
+                    <td>{{ assignment.title }}</td>
+                    <td>{{ assignment.description }}</td>
+                    <td>{{ assignment.due_date }}</td>
+                    <td>{{ assignment.student.username }}</td>
+                    <td>{{ assignment.grade }}</td>
+                    <td>
+                        <a href="{% url 'edit_assignment' assignment.id %}" class="btn btn-warning">Edit</a>
+                        <a href="{% url 'delete_assignment' assignment.id %}" class="btn btn-danger">Delete</a>
+                        <a href="{% url 'grade_assignment' assignment.id %}" class="btn btn-success">Grade</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No assignments available.</p>
+{% endif %}
+{% endblock %}
+
+
+### File: myapp\templates\base.html ###
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}Assignments{% endblock %}</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css' %}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Assignments</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div class="container">
+        {% block content %}
+        {% endblock %}
+    </div>
+    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+</body>
+</html>
+
+
+### File: myapp\templates\delete_assignment.html ###
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Assignment</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Delete Assignment</h1>
+        <p>Are you sure you want to delete the assignment "{{ assignment.title }}"?</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Delete</button>
+            <a href="{% url 'list_assignments' %}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</body>
+</html>
+
+
+### File: myapp\templates\grade_assignment.html ###
+<!-- templates/grade_assignment.html -->
+{% extends 'base.html' %}
+
+{% block title %}Grade Assignment{% endblock %}
+
+{% block content %}
+<h2>Grade Assignment</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success">Submit Grade</button>
+    <a href="{% url 'list_assignments' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}
+
+
 ### File: myapp\templates\home.html ###
-<!-- myapp/templates/home.html -->
 <!DOCTYPE html>
 <html>
 <head>
     <title>Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+        }
+        header {
+            background: #333;
+            color: #fff;
+            padding-top: 30px;
+            min-height: 70px;
+            border-bottom: #0779e4 3px solid;
+        }
+        header a {
+            color: #fff;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 16px;
+        }
+        header ul {
+            padding: 0;
+            list-style: none;
+        }
+        header li {
+            float: left;
+            display: inline;
+            padding: 0 20px 0 20px;
+        }
+        header #branding {
+            float: left;
+        }
+        header #branding h1 {
+            margin: 0;
+        }
+        header nav {
+            float: right;
+            margin-top: 10px;
+        }
+        footer {
+            padding: 20px;
+            margin-top: 20px;
+            color: #fff;
+            background-color: #333;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+            background: #fff;
+            margin-top: 20px;
+        }
+        a.button {
+            display: inline-block;
+            height: 40px;
+            background: #0779e4;
+            color: #fff;
+            border: 0;
+            padding-left: 20px;
+            padding-right: 20px;
+            cursor: pointer;
+            text-align: center;
+            line-height: 40px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome, {{ user.username }}!</h1>
-    <p>This is the home page.</p>
+    <header>
+        <div class="container">
+            <div id="branding">
+                <h1>Welcome, {{ user.username }}!</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'register' %}">Register</a></li>
+                    <li><a href="{% url 'login' %}">Login</a></li>
+                    <li><a href="{% url 'list_assignments' %}">Assignments</a></li>
+                    <li><a href="{% url 'add_assignment' %}">Add Assignment</a></li>
+                    <!-- <li><a href="{% url 'update_assignment' pk=1 %}">Update Assignment</a></li>
+                    <li><a href="{% url 'delete_assignment' pk=1 %}">Delete Assignment</a></li> -->
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="content">
+            <p>This is the Home page.</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>My App &copy; 2024</p>
+    </footer>
 </body>
 </html>
 
@@ -208,6 +640,46 @@ def home(request):
     {% if form.non_field_errors %}
         <div class="error">{{ form.non_field_errors }}</div>
     {% endif %}
+</body>
+</html>
+
+
+### File: myapp\templates\register.html ###
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+</head>
+<body>
+    <h1>Register</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Register</button>
+    </form>
+</body>
+</html>
+
+
+### File: myapp\templates\update_assignment.html ###
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Assignment</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Update Assignment</h1>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">Update Assignment</button>
+        </form>
+        <a href="{% url 'list_assignments' %}" class="btn btn-secondary mt-3">Back to Assignments</a>
+    </div>
 </body>
 </html>
 
