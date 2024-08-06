@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Grade Assignment{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Grade Assignment</h1>
+        {% if messages %}
+            <div>
+                {% for message in messages %}
+                    <div class="alert alert-success" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <!-- Assignment Details -->
+        <div class="card mb-4">
+            <div class="card-header">
+                Assignment Details
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ assignment.title }}</h5>
+                <p class="card-text">{{ assignment.description }}</p>
+                <!-- <p class="card-text"><strong>Due Date:</strong> {{ assignment.due_date }}</p> -->
+            </div>
+        </div>
+
+        <!-- Grade Assignment Form -->
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="grade">Grade</label>
+                {{ form.grade }}
+            </div>
+            <div class="form-group">
+                <label for="feedback">Feedback</label>
+                {{ form.feedback }}
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+    {% endblock %}
