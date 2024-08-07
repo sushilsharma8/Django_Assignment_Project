@@ -1,9 +1,17 @@
 {% extends 'base.html' %}
 
-{% block title %}Home{% endblock %}
+{% block title %}Add Assignment{% endblock %}
 
 {% block content %}
-<div class="content">
-    <h2 align="center">This is the Home page.</h2>
-</div>
-{% endblock %}
+    <div class="container text-center">
+        <h1>Welcome to Assignment Master!</h1>
+        <p>Hey there! You've landed at Assignment Master, the ultimate spot for managing your school assignments effortlessly. Whether you're a student gearing up to ace your tasks, a teacher looking to grade like a pro, or a principal keeping an eagle eye on everything, we've got you covered!</p>
+        <p>Dive in and explore:</p>
+        <ul class="list-unstyled">
+            <li><strong>Students:</strong> Stay on top of your assignments and never miss a deadline.</li>
+            <li><strong>Teachers:</strong> Grade assignments with ease and provide valuable feedback.</li>
+            <li><strong>Principals:</strong> Manage users and keep everything running smoothly.</li>
+        </ul>
+        <a href="{% url 'register' %}" class="btn btn-primary btn-lg mt-4">Get Started</a>
+    </div>
+    {% endblock %}

@@ -15,5 +15,5 @@ urlpatterns = [
     path('update_user/<int:pk>/', views.update_user, name='update_user'),
     path('delete_user/<int:pk>/', views.delete_user, name='delete_user'),
     path('logout/', views.logout_view, name='logout'),
-    # path('base/', views.home, name='base'),
+    path('permission-denied/', views.permission_denied, name='permission_denied'),
 ]

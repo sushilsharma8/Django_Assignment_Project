@@ -34,7 +34,7 @@ def gather_django_files(project_path, output_file):
         write_files(outfile)
 
 if __name__ == "__main__":
-    project_directory = "C:\\Users\\sushi\\OneDrive\\Desktop\\Bookee_Django\\myproject"  # Specified project directory
+    project_directory = "C:\\Users\\sushi\\OneDrive\\Desktop\\Django_Assignment_Project\\myproject"  # Specified project directory
     output_txt = "django_project_files.txt"
     gather_django_files(project_directory, output_txt)
     print(f"Django project files and structure gathered into {output_txt}")

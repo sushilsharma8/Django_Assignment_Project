@@ -16,7 +16,51 @@
         .register-container {
             background: white;
             padding: 30px;
-            border-radius: 10px;
+            border-radius: 10px;<!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Register</title>
+                <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+                <script>
+                    function toggleFields(role) {
+                        var studentIdField = document.getElementById('div_id_student_id');
+                        var teacherIdField = document.getElementById('div_id_teacher_id');
+            
+                        if (role.value === 'ST') {
+                            studentIdField.style.display = 'block';
+                            teacherIdField.style.display = 'none';
+                        } else if (role.value === 'TE') {
+                            studentIdField.style.display = 'none';
+                            teacherIdField.style.display = 'block';
+                        } else {
+                            studentIdField.style.display = 'none';
+                            teacherIdField.style.display = 'none';
+                        }
+                    }
+            
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var roleField = document.getElementById('id_role');
+                        toggleFields(roleField);
+                        roleField.addEventListener('change', function() {
+                            toggleFields(this);
+                        });
+                    });
+                </script>
+            </head>
+            <body>
+                <div class="container mt-5">
+                    <h1>Register</h1>
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </form>
+                </div>
+            </body>
+            </html>
+            
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
     </style>

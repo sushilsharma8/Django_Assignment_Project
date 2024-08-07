@@ -102,12 +102,9 @@ def delete_assignment(request, pk):
     return render(request, 'delete_assignment.html', {'assignment': assignment})
 
 @login_required
-@role_required('teacher')
-# @permission_required('teacher')
+@role_required('teacher', 'principal')  
 def grade_assignment(request, pk):
     assignment = get_object_or_404(Assignment, pk=pk)
-    # if request.user.role != 'Teacher':
-    #     return redirect('list_assignments')
     if request.method == 'POST':
         form = GradeForm(request.POST, instance=assignment)
         if form.is_valid():
@@ -117,6 +114,7 @@ def grade_assignment(request, pk):
     else:
         form = GradeForm(instance=assignment)
     return render(request, 'grade_assignment.html', {'form': form, 'assignment': assignment})
+
 
 @login_required
 @role_required('principal')
@@ -160,3 +158,6 @@ def delete_user(request, pk):
         messages.success(request, 'User deleted successfully!')
         return redirect('manage_users')
     return render(request, 'delete_user.html', {'user': user})
+
+def permission_denied(request):
+    return render(request, 'permission_denied.html')
