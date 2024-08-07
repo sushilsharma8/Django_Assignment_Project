@@ -47,7 +47,10 @@ def login_view(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 auth_login(request, user)
-                return redirect('home')
+                if(user.role == "principal"):
+                    return redirect('manage_users')
+                else:
+                    return redirect('list_assignments')
             else:
                 form.add_error(None, 'Invalid credentials')
     else:
